@@ -95,10 +95,14 @@ class App {
     #workouts = [];
 
     constructor() {
+        // Get user's position
         this._getPosition();
-        // Display marker
+
+        // Get data from local storage
+        this._getLocalStorage();
+
+        // Attach event handlers
         form.addEventListener('submit', this._newWorkOut.bind(this));
-        // Toggle between elevation and cadence
         inputType.addEventListener('change', this._toggleElevationField);
         containerWorkouts.addEventListener(
             'click',
@@ -137,6 +141,11 @@ class App {
 
         // Handling clicks on map
         this.#map.on('click', this._showForm.bind(this));
+
+        // Add marker to the map (retrive data from local storage)
+        this.#workouts.forEach(work => {
+            this._renderWorkoutMarker(work);
+        });
     }
 
     //************************************************//
@@ -227,6 +236,9 @@ class App {
 
         // Clear input fields + hide the form
         this._hideForm();
+
+        // Set local storage to all workouts
+        this._setLocalStorage();
     }
 
     //************************************************//
@@ -309,6 +321,8 @@ class App {
     //************************************************//
 
     _moveToPopup(e) {
+        if (!this.#map) return;
+
         const workoutEl = e.target.closest('.workout');
 
         if (!workoutEl) return;
@@ -316,6 +330,8 @@ class App {
         const workout = this.#workouts.find(
             work => work.id === workoutEl.dataset.id
         );
+        console.log(workout);
+        console.log(workoutEl.dataset.id);
 
         this.#map.setView(workout.coords, this.#mapZoomLevel, {
             animate: true,
@@ -323,7 +339,33 @@ class App {
         });
 
         // Using the public interface
-        workout.click();
+        // workout.click();
+        // disable the click counter because the object coming from local storage will not inherit all the methods (prototype chain broken)
+    }
+
+    //************************************************//
+
+    _setLocalStorage() {
+        localStorage.setItem('workouts', JSON.stringify(this.#workouts));
+    }
+
+    //************************************************//
+
+    _getLocalStorage() {
+        const data = JSON.parse(localStorage.getItem('workouts'));
+
+        if (!data) return;
+
+        this.#workouts = data; // 1. Add data to the workout array
+        this.#workouts.forEach(work => this._renderWorkout(work)); // 2. Add data to the navigation bar
+        // 3. Add marker to the map / added in the _loadMap() function
+    }
+
+    //************************************************//
+
+    reset() {
+        localStorage.removeItem('workouts');
+        location.reload();
     }
 }
 
